@@ -1,0 +1,15 @@
+[package]
+name = "events_backend"
+version = "0.0.1"
+authors = ["Simon Richardson <stickupkid@gmail.com>"]
+
+[dependencies]
+iron = "*"
+router = "*"
+uuid = "*"
+rustc-serialize = "*"
+mount = "*"
+unicase = "*"
+
+[dependencies.bodyparser]
+git = "https://github.com/iron/body-parser.git"
