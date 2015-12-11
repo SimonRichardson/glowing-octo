@@ -50,7 +50,9 @@ fn main() {
     let mut router = Router::new();
     let repository: Arc<Repository<Event>> = Arc::new(Repository::new());
 
-    router.get("/events", GETEventsHandler::new(repository));
+    router.get("/events", GetEventsHandler::new(repository.clone()));
+    router.post("/events", PostEventsHandler::new(repository.clone()));
+    router.delete("/events", DeleteEventsHandler::new(repository.clone()));
 
     let mut mount = Mount::new();
     mount.mount("/", router);

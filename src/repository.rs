@@ -26,4 +26,9 @@ impl<T> Repository<T> where T: Clone {
         }
         values
     }
+
+    pub fn delete_all(&self) {
+        let mut m_entities = self.entities.lock().unwrap();
+        m_entities.clear();
+    }
 }
