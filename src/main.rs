@@ -8,8 +8,6 @@ extern crate jsonway;
 extern crate valico;
 extern crate url;
 
-use std::net;
-use std::str::FromStr;
 use rustless::prelude::*;
 use rustless::batteries::schemes;
 use rustless::batteries::swagger;
@@ -24,7 +22,8 @@ const USAGE: &'static str = "
 Events backend.
 
 Usage:
-  backend [--ip=<ip>] [--port=<port>] run
+  backend [--ip=<ip> --port=<port>] <command> [<args>...]
+  backend [options]
   backend --version
   backend --help
 
@@ -34,6 +33,19 @@ Options:
   --ip=<ip>        Specify server ip [default: 127.0.0.1]
   --port=<port>    Specify server port [default: 3001]
 ";
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    arg_command: Option<Command>,
+    arg_args: Vec<String>,
+    flag_ip: String,
+    flag_port: u16,
+}
+
+#[derive(Debug, RustcDecodable)]
+enum Command {
+    Run,
+}
 
 fn main() {
     let mut app = rustless::Application::new(self::api::root());
@@ -57,26 +69,21 @@ fn main() {
     });
 
     let version = "0.0.1".to_owned();
-    let args = Docopt::new(USAGE)
-                        .and_then(|dopt| dopt.version(Some(version)).parse())
+    let args: Args = Docopt::new(USAGE)
+                        .and_then(|dopt| dopt.version(Some(version)).options_first(true).decode())
                         .unwrap_or_else(|e| e.exit());
 
-    if args.get_bool("--version") {
-        println!("0.0.1");
-    } else if args.get_bool("run") {
 
-        app.root_api.mount(swagger::create_api("api-docs"));
-        schemes::enable_schemes(&mut app, json_schema::Scope::new()).unwrap();
+    match args.arg_command {
+        Some(_) => {
+            app.root_api.mount(swagger::create_api("api-docs"));
+            
+            schemes::enable_schemes(&mut app, json_schema::Scope::new()).unwrap();
 
-        let chain = iron::Chain::new(app);
-
-        //let host = args.get_str("--ip");
-
-        //let port_str = args.get_str("--port");
-        //let port = FromStr::from_str(&port_str).unwrap_or(8080);
-
-        iron::Iron::new(chain).http(("0.0.0.0", 8080)).unwrap();
-
-        //println!("On {}", port);
+            let chain = iron::Chain::new(app);
+            let host = args.flag_ip.to_string();
+            iron::Iron::new(chain).http((&*host, args.flag_port)).unwrap();
+        }
+        _ => {}
     }
 }
