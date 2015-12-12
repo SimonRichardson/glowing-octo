@@ -4,12 +4,12 @@ version = "0.0.1"
 authors = ["Simon Richardson <stickupkid@gmail.com>"]
 
 [dependencies]
-iron = "*"
-router = "*"
-uuid = "*"
-rustc-serialize = "*"
-mount = "*"
-unicase = "*"
-
-[dependencies.bodyparser]
-git = "https://github.com/iron/body-parser.git"
+docopt = "0.6"
+"iron" = "0.2"
+jsonway = "0.3"
+rustc-serialize = "0.3"
+rustless = "0.7"
+time = "0.1"
+valico = "0.8"
+url = "0.5"
+uuid = "0.1"

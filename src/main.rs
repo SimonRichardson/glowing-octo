@@ -1,69 +1,82 @@
-#[macro_use]
+extern crate rustless;
+extern crate time;
 extern crate rustc_serialize;
-extern crate unicase;
-extern crate mount;
-extern crate bodyparser;
-extern crate uuid;
 extern crate iron;
-extern crate router;
+extern crate docopt;
+extern crate uuid;
+extern crate jsonway;
+extern crate valico;
+extern crate url;
 
-mod repository;
-mod event;
-mod handlers;
-
-use std::sync::Arc;
-use std::env;
+use std::net;
 use std::str::FromStr;
+use rustless::prelude::*;
+use rustless::batteries::schemes;
+use rustless::batteries::swagger;
+use valico::json_schema;
+use docopt::Docopt;
 
-use iron::headers;
-use iron::method::Method::*;
-use iron::prelude::*;
-use iron::AfterMiddleware;
+mod serializers;
+mod models;
+mod api;
 
-use mount::Mount;
-use router::Router;
-use unicase::UniCase;
+const USAGE: &'static str = "
+Events backend.
 
-use ::handlers::*;
-use repository::Repository;
-use event::Event;
+Usage:
+  backend [--ip=<ip>] [--port=<port>] run
+  backend --version
+  backend --help
 
-struct CORS;
-
-impl AfterMiddleware for CORS {
-    fn after(&self, _: &mut Request, mut res: Response) -> IronResult<Response> {
-        res.headers.set(headers::AccessControlAllowOrigin::Any);
-        res.headers.set(headers::AccessControlAllowHeaders(
-            vec![
-                UniCase("accept".to_string()),
-                UniCase("content-type".to_string())
-            ]
-        ));
-        res.headers.set(headers::AccessControlAllowMethods(
-            vec![Get,Head,Post,Delete,Options,Put,Patch]
-        ));
-        Ok(res)
-    }
-}
+Options:
+  -h --help        Show this screen.
+  --version        Show version.
+  --ip=<ip>        Specify server ip [default: 127.0.0.1]
+  --port=<port>    Specify server port [default: 3001]
+";
 
 fn main() {
-    let mut router = Router::new();
-    let repository: Arc<Repository<Event>> = Arc::new(Repository::new());
+    let mut app = rustless::Application::new(self::api::root());
 
-    router.get("/events", GetEventsHandler::new(repository.clone()));
-    router.post("/events", PostEventsHandler::new(repository.clone()));
-    router.delete("/events", DeleteEventsHandler::new(repository.clone()));
+    swagger::enable(&mut app, swagger::Spec {
+        info: swagger::Info {
+            title: "Events API".to_string(),
+            description: Some("Events API document".to_string()),
+            contact: Some(swagger::Contact {
+                name: "Simon Richardson".to_string(),
+                url: Some("http://dice.fm".to_string()),
+                ..std::default::Default::default()
+            }),
+            license: Some(swagger::License {
+                name: "MIT".to_string(),
+                url: "http://opensource.org/licenses/MIT".to_string()
+            }),
+            ..std::default::Default::default()
+        },
+        ..std::default::Default::default()
+    });
 
-    let mut mount = Mount::new();
-    mount.mount("/", router);
+    let version = "0.0.1".to_owned();
+    let args = Docopt::new(USAGE)
+                        .and_then(|dopt| dopt.version(Some(version)).parse())
+                        .unwrap_or_else(|e| e.exit());
 
-    let mut chain = Chain::new(mount);
-    chain.link_after(CORS);
+    if args.get_bool("--version") {
+        println!("0.0.1");
+    } else if args.get_bool("run") {
 
-    fn get_server_port() -> u16 {
-        let port_str = env::var("PORT").unwrap_or(String::new());
-        FromStr::from_str(&port_str).unwrap_or(8080)
+        app.root_api.mount(swagger::create_api("api-docs"));
+        schemes::enable_schemes(&mut app, json_schema::Scope::new()).unwrap();
+
+        let chain = iron::Chain::new(app);
+
+        //let host = args.get_str("--ip");
+
+        //let port_str = args.get_str("--port");
+        //let port = FromStr::from_str(&port_str).unwrap_or(8080);
+
+        iron::Iron::new(chain).http(("0.0.0.0", 8080)).unwrap();
+
+        //println!("On {}", port);
     }
-
-    Iron::new(chain).http(("0.0.0.0", get_server_port())).unwrap();
 }
