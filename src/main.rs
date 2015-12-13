@@ -1,19 +1,29 @@
+extern crate bson;
+extern crate docopt;
+extern crate iron;
+extern crate jsonway;
+extern crate mongodb;
+extern crate rustc_serialize;
 extern crate rustless;
 extern crate time;
-extern crate rustc_serialize;
-extern crate iron;
-extern crate docopt;
-extern crate uuid;
-extern crate jsonway;
 extern crate valico;
 extern crate url;
+extern crate uuid;
+
+use docopt::Docopt;
+
+use mongodb::{Client, ThreadedClient};
+use mongodb::db::{Database};
 
 use rustless::prelude::*;
 use rustless::batteries::schemes;
 use rustless::batteries::swagger;
-use valico::json_schema;
-use docopt::Docopt;
 
+use valico::json_schema;
+
+use self::db::DatabaseExt;
+
+mod db;
 mod serializers;
 mod models;
 mod api;
@@ -22,16 +32,19 @@ const USAGE: &'static str = "
 Events backend.
 
 Usage:
-  backend [--ip=<ip> --port=<port>] <command> [<args>...]
+  backend [--ip=<ip> --port=<port> --dbhost=<dbhost> --dbport=<dbport> --dbname=<dbname>] <command> [<args>...]
   backend [options]
   backend --version
   backend --help
 
 Options:
-  -h --help        Show this screen.
-  --version        Show version.
-  --ip=<ip>        Specify server ip [default: 127.0.0.1]
-  --port=<port>    Specify server port [default: 3001]
+  -h --help             Show this screen.
+  --version             Show version.
+  --ip=<ip>             Specify server ip [default: 127.0.0.1]
+  --port=<port>         Specify server port [default: 3001]
+  --dbhost=<dbhost>     Specify db host [default: 127.0.0.1]
+  --dbport=<dbport>     Specify db port [default: 27017]
+  --dbname=<dbname>     Specify db name [default: test]
 ";
 
 #[derive(Debug, RustcDecodable)]
@@ -40,11 +53,29 @@ struct Args {
     arg_args: Vec<String>,
     flag_ip: String,
     flag_port: u16,
+    flag_dbhost: String,
+    flag_dbport: u16,
+    flag_dbname: String,
 }
 
 #[derive(Debug, RustcDecodable)]
 enum Command {
     Run,
+}
+
+struct DBOptions {
+    host: String,
+    port: u16,
+    name: String,
+}
+
+fn run_db(app: &mut rustless::Application, options: DBOptions) {
+    let host = options.host.to_string();
+    let client = Client::connect(&*host, options.port).unwrap();
+
+    let name = options.name.to_string();
+    let db: mongodb::db::Database = client.db(&*name);
+    app.ext.insert::<self::db::AppDb>(db);
 }
 
 fn main() {
@@ -76,6 +107,15 @@ fn main() {
 
     match args.arg_command {
         Some(_) => {
+
+            let options = DBOptions {
+                host: args.flag_dbhost,
+                port: args.flag_dbport,
+                name: args.flag_dbname,
+            };
+
+            run_db(&mut app, options);
+
             app.root_api.mount(swagger::create_api("api-docs"));
             
             schemes::enable_schemes(&mut app, json_schema::Scope::new()).unwrap();

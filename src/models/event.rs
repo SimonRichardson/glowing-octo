@@ -1,6 +1,10 @@
 use uuid;
 use time;
 
+use bson::Bson;
+use mongodb::db::{Database, ThreadedDatabase};
+use mongodb::coll::options::{FindOptions};
+
 pub struct Event {
     id: uuid::Uuid,
     name: String,
@@ -21,8 +25,29 @@ impl Event {
         }
     }
 
-    pub fn latest() -> Vec<Event> {
-        let events = vec![];
+    pub fn latest(db: &Database) -> Vec<Event> {
+        let coll = db.collection("events");
+
+        let mut options = FindOptions::new();
+        options.limit = 10;
+
+        let mut cursor = coll.find(None, Some(options)).ok().expect("Failed.");
+
+        let mut events = vec![];
+        for doc in cursor {
+            match doc {
+                Ok(res) => {
+                    let mut name = "";
+                    match res.get("name") {
+                        Some(&Bson::String(ref val)) => name = val,
+                        _ => panic!("Unexpected type"),
+                    }
+                    let now = time::now().to_timespec();
+                    events.push(Event::new(name.to_string(), now));
+                },
+                _ => panic!("Fucked!")
+            }
+        }
         events
     }
 }
