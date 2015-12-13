@@ -1,4 +1,7 @@
+use rustc_serialize::hex::ToHex;
+
 use jsonway::{self, ObjectSerializer};
+
 use time;
 
 use super::super::models::event;
@@ -10,7 +13,7 @@ impl jsonway::ObjectSerializer<event::Event> for EventSerializer {
     fn root(&self) -> Option<&str> { Some("event") }
 
     fn build(&self, event: &event::Event, json: &mut jsonway::ObjectBuilder) {
-        json.set("id", event.get_id().to_string());
+        json.set("id", event.get_id().bytes().to_hex().to_string());
         json.set("name", event.get_name().to_string());
         json.set("date", time::at_utc(event.get_date().clone()).rfc3339().to_string());
     }
