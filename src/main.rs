@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate mdo;
 extern crate bson;
 extern crate docopt;
 extern crate iron;

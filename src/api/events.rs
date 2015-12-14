@@ -14,11 +14,17 @@ pub fn events(path: &str) -> rustless::Namespace {
 
         events.get("latest", |endpoint| {
             endpoint.desc("Get latest events");
-            endpoint.handle(|client, _| {
+            endpoint.handle(|mut client, _| {
 
                 let db = client.app.db();
                 let events = event::Event::latest(&*db);
-                client.json(&event_serializer::EventListSerializer::new(&events).serialize(true))
+                match events {
+                    Ok(events) => client.json(&event_serializer::EventListSerializer::new(&events).serialize(true)),
+                    _ => {
+                        client.not_found();
+                        client.empty()
+                    }
+                }
             })
         });
     })

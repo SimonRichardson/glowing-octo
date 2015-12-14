@@ -1,45 +1,31 @@
 use time;
 
+use models::*;
+
+use std::fmt;
+
+use rustc_serialize::hex::ToHex;
+
+use mdo::result::*;
+
+use bson::Document;
 use bson::oid::ObjectId;
 
 use mongodb::db::{Database, ThreadedDatabase};
+use mongodb::error::Error;
 use mongodb::coll::options::{FindOptions};
-
-#[macro_export]
-macro_rules! find {
-    ($db:expr, $name:expr, $query:expr) => {{
-        find!($db, $name, $query, None)
-    }};
-    ($db:expr, $name:expr, $query:expr, $options:expr) => {{
-        let coll = $db.collection($name);
-        coll.find($query, $options).ok().expect("Not Found.")
-    }};
-}
-
-#[macro_export]
-macro_rules! extract_object_id {
-    ($res:expr, $name:expr) => {{
-        match $res.get_object_id($name) {
-            Ok(val) => val.to_owned(),
-            _ => panic!("Not Found.")
-        }
-    }}
-}
-
-#[macro_export]
-macro_rules! extract_string {
-    ($res:expr, $name:expr) => {{
-        match $res.get_str($name) {
-            Ok(val) => val.to_string(),
-            _ => panic!("Not Found.")
-        }
-    }}
-}
+use mongodb::cursor::Cursor;
 
 pub struct Event {
     id: ObjectId,
     name: String,
     date: time::Timespec
+}
+
+impl fmt::Display for Event {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Event(ObjectId(\"{}\"), {})", self.id.bytes().to_hex(), self.name)
+    }
 }
 
 impl Event {
@@ -62,25 +48,36 @@ impl Event {
         event
     }
 
-    pub fn latest(db: &Database) -> Vec<Event> {
+    pub fn latest(db: &Database) -> Result<Vec<Event>, Error> {
         let mut options = FindOptions::new();
         options.limit = 10;
 
-        let cursor = find!(db, "events", None, Some(options));
+        fn go(cursor: Cursor) -> Result<Vec<Event>, Error> {
+            fn f(doc: Result<Document, Error>) -> Option<Event>{
 
-        let mut events = vec![];
-        for doc in cursor {
-            match doc {
-                Ok(res) => {
-                    let id = extract_object_id!(res, "_id");
-                    let name = extract_string!(res, "name");
-                    let now = time::now().to_timespec();
-                    events.push(Event::with_id(id, name, now));
-                },
-                _ => panic!("Fucked!")
+                let event = mdo! {
+                    res =<< doc;
+                    ret ret(mdo! {
+                        id =<< extract_object_id!(res, "_id");
+                        name =<< extract_string!(res, "name");
+
+                        let date = time::now().to_timespec();
+                        ret ret(Event::with_id(id.to_owned(), name, date))
+                    })
+                };
+
+                event.and_then(|x| x.or(Err(NOT_FOUND))).ok()
             }
+
+            let mut result = Vec::new();
+            Ok(fold!(cursor, result, f))
         }
-        events
+
+        let cursor = find!(db, "events", None, Some(options));
+        return mdo! {
+            c =<< cursor;
+            ret go(c)
+        }
     }
 }
 
