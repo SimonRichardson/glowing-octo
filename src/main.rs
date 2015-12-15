@@ -11,6 +11,7 @@ extern crate time;
 extern crate valico;
 extern crate url;
 extern crate uuid;
+extern crate chrono;
 
 use docopt::Docopt;
 
