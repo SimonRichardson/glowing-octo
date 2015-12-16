@@ -11,7 +11,7 @@ use bson::oid::ObjectId;
 
 use mongodb::db::{Database, ThreadedDatabase};
 use mongodb::error::Error;
-use mongodb::coll::options::{FindOptions};
+use mongodb::coll::options::FindOptions;
 use mongodb::cursor::Cursor;
 
 use chrono::{DateTime, UTC};
@@ -24,21 +24,29 @@ pub struct Event {
 
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Event(ObjectId(\"{}\"), {})", self.id.bytes().to_hex(), self.name)
+        write!(f,
+               "Event(ObjectId(\"{}\"), {})",
+               self.id.bytes().to_hex(),
+               self.name)
     }
 }
 
 impl Event {
-
-    pub fn get_id(&self) -> &ObjectId { &self.id }
-    pub fn get_name(&self) -> &str { &self.name }
-    pub fn get_date(&self) -> &DateTime<UTC> { &self.date }
+    pub fn get_id(&self) -> &ObjectId {
+        &self.id
+    }
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn get_date(&self) -> &DateTime<UTC> {
+        &self.date
+    }
 
     pub fn new(name: String, date: DateTime<UTC>) -> Event {
         Event {
             id: ObjectId::new().unwrap(),
             name: name,
-            date: date
+            date: date,
         }
     }
 
@@ -53,7 +61,7 @@ impl Event {
         options.limit = 10;
 
         fn go(cursor: Cursor) -> Result<Vec<Event>, Error> {
-            fn f(doc: Result<Document, Error>) -> Option<Event>{
+            fn f(doc: Result<Document, Error>) -> Option<Event> {
 
                 let event = mdo! {
                     ref res =<< doc;
@@ -61,7 +69,7 @@ impl Event {
                         ref id =<< extract_object_id!(res, "_id");
                         name =<< extract_string!(res, "name");
                         date =<< extract_date!(res, "date");
-                        
+
                         ret ret(Event::with_id(id.to_owned(), name.to_owned(), date))
                     })
                 };
@@ -77,7 +85,6 @@ impl Event {
         return mdo! {
             c =<< cursor;
             ret go(c)
-        }
+        };
     }
 }
-

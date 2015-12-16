@@ -5,7 +5,9 @@ use mongodb::db::Database;
 
 pub struct AppDb;
 
-impl Key for AppDb { type Value = Database; }
+impl Key for AppDb {
+    type Value = Database;
+}
 
 pub trait DatabaseExt: rustless::Extensible {
     fn db(&self) -> &Database;

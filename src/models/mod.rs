@@ -1,6 +1,6 @@
 use mongodb::error::Error;
 
-pub const NOT_FOUND : Error = Error::CursorNotFoundError;
+pub const NOT_FOUND: Error = Error::CursorNotFoundError;
 
 #[macro_export]
 macro_rules! find {

@@ -16,7 +16,7 @@ extern crate chrono;
 use docopt::Docopt;
 
 use mongodb::{Client, ThreadedClient};
-use mongodb::db::{Database};
+use mongodb::db::Database;
 
 use rustless::prelude::*;
 use rustless::batteries::schemes;
@@ -31,6 +31,7 @@ mod serializers;
 mod models;
 mod api;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 const USAGE: &'static str = "
 Events backend.
 
@@ -84,28 +85,29 @@ fn run_db(app: &mut rustless::Application, options: DBOptions) {
 fn main() {
     let mut app = rustless::Application::new(self::api::root());
 
-    swagger::enable(&mut app, swagger::Spec {
-        info: swagger::Info {
-            title: "Events API".to_string(),
-            description: Some("Events API document".to_string()),
-            contact: Some(swagger::Contact {
-                name: "Simon Richardson".to_string(),
-                url: Some("http://dice.fm".to_string()),
-                ..std::default::Default::default()
-            }),
-            license: Some(swagger::License {
-                name: "MIT".to_string(),
-                url: "http://opensource.org/licenses/MIT".to_string()
-            }),
-            ..std::default::Default::default()
-        },
-        ..std::default::Default::default()
-    });
+    swagger::enable(&mut app,
+                    swagger::Spec {
+                        info: swagger::Info {
+                            title: "Events API".to_string(),
+                            description: Some("Events API document".to_string()),
+                            contact: Some(swagger::Contact {
+                                name: "Simon Richardson".to_string(),
+                                url: Some("http://dice.fm".to_string()),
+                                ..std::default::Default::default()
+                            }),
+                            license: Some(swagger::License {
+                                name: "MIT".to_string(),
+                                url: "http://opensource.org/licenses/MIT".to_string(),
+                            }),
+                            ..std::default::Default::default()
+                        },
+                        ..std::default::Default::default()
+                    });
 
     let version = "0.0.1".to_owned();
     let args: Args = Docopt::new(USAGE)
-                        .and_then(|dopt| dopt.version(Some(version)).options_first(true).decode())
-                        .unwrap_or_else(|e| e.exit());
+                         .and_then(|dopt| dopt.version(Some(version)).options_first(true).decode())
+                         .unwrap_or_else(|e| e.exit());
 
 
     match args.arg_command {
@@ -120,7 +122,7 @@ fn main() {
             run_db(&mut app, options);
 
             app.root_api.mount(swagger::create_api("api-docs"));
-            
+
             schemes::enable_schemes(&mut app, json_schema::Scope::new()).unwrap();
 
             let chain = iron::Chain::new(app);

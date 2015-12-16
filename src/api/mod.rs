@@ -19,14 +19,23 @@ pub fn root() -> rustless::Api {
         api.error_formatter(|error, _| {
             if error.is::<errors::Validation>() {
                 let val_err = error.downcast::<errors::Validation>().unwrap();
-                return Some(rustless::Response::from_json(status::StatusCode::BadRequest, &jsonway::object(|json| {
-                    json.set_json("message", "Validation Error".to_json());
-                    json.set_json("errors", val_err.reason.to_json())
-                }).unwrap()))
+                return Some(rustless::Response::from_json(status::StatusCode::BadRequest,
+                                                          &jsonway::object(|json| {
+                                                               json.set_json("message",
+                                                                             "Validation Error"
+                                                                                 .to_json());
+                                                               json.set_json("errors",
+                                                                             val_err.reason
+                                                                                    .to_json())
+                                                           })
+                                                               .unwrap()));
             } else if error.is::<errors::NotMatch>() || error.is::<errors::NotFound>() {
-                return Some(rustless::Response::from_json(status::StatusCode::NotFound, &jsonway::object(|json| {
-                    json.set_json("message", "Not Found".to_json())
-                }).unwrap()))
+                return Some(rustless::Response::from_json(status::StatusCode::NotFound,
+                                                          &jsonway::object(|json| {
+                                                               json.set_json("message",
+                                                                             "Not Found".to_json())
+                                                           })
+                                                               .unwrap()));
             }
 
             None

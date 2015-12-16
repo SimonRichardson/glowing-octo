@@ -7,8 +7,9 @@ use models::event;
 pub struct EventSerializer;
 
 impl jsonway::ObjectSerializer<event::Event> for EventSerializer {
-
-    fn root(&self) -> Option<&str> { Some("event") }
+    fn root(&self) -> Option<&str> {
+        Some("event")
+    }
 
     fn build(&self, event: &event::Event, json: &mut jsonway::ObjectBuilder) {
         json.set("id", event.get_id().bytes().to_hex().to_string());
@@ -18,20 +19,19 @@ impl jsonway::ObjectSerializer<event::Event> for EventSerializer {
 }
 
 pub struct EventListSerializer<'a> {
-    events: &'a Vec<event::Event>
+    events: &'a Vec<event::Event>,
 }
 
 impl<'a> EventListSerializer<'a> {
     pub fn new(events: &'a Vec<event::Event>) -> EventListSerializer<'a> {
-        EventListSerializer{
-            events: events
-        }
+        EventListSerializer { events: events }
     }
 }
 
 impl<'a> jsonway::ArraySerializer for EventListSerializer<'a> {
-    
-    fn root(&self) -> Option<&str> { Some("events") }
+    fn root(&self) -> Option<&str> {
+        Some("events")
+    }
 
     fn build(&self, array: &mut jsonway::ArrayBuilder) {
         for event in self.events.iter() {

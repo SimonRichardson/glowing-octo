@@ -19,7 +19,10 @@ pub fn events(path: &str) -> rustless::Namespace {
                 let db = client.app.db();
                 let events = event::Event::latest(&*db);
                 match events {
-                    Ok(events) => client.json(&event_serializer::EventListSerializer::new(&events).serialize(true)),
+                    Ok(events) => {
+                        client.json(&event_serializer::EventListSerializer::new(&events)
+                                         .serialize(true))
+                    }
                     _ => {
                         client.not_found();
                         client.empty()
