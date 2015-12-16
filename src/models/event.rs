@@ -16,10 +16,14 @@ use mongodb::cursor::Cursor;
 
 use chrono::{DateTime, UTC};
 
+use std::default;
+
 pub struct Event {
     id: ObjectId,
-    name: String,
     date: DateTime<UTC>,
+    date_limit: DateTime<UTC>,
+    sale_start_date: DateTime<UTC>,
+    name: String,
 }
 
 impl fmt::Display for Event {
@@ -28,6 +32,19 @@ impl fmt::Display for Event {
                "Event(ObjectId(\"{}\"), {})",
                self.id.bytes().to_hex(),
                self.name)
+    }
+}
+
+impl default::Default for Event {
+    fn default() -> Event {
+        let now = UTC::now();
+        Event {
+            id: ObjectId::new().unwrap(),
+            date: now,
+            date_limit: now,
+            sale_start_date: now,
+            name: "".to_string(),
+        }
     }
 }
 
@@ -47,6 +64,7 @@ impl Event {
             id: ObjectId::new().unwrap(),
             name: name,
             date: date,
+            ..default::Default::default()
         }
     }
 

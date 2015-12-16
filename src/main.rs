@@ -26,6 +26,8 @@ use valico::json_schema;
 
 use self::db::DatabaseExt;
 
+use std::default;
+
 mod db;
 mod serializers;
 mod models;
@@ -93,15 +95,15 @@ fn main() {
                             contact: Some(swagger::Contact {
                                 name: "Simon Richardson".to_string(),
                                 url: Some("http://dice.fm".to_string()),
-                                ..std::default::Default::default()
+                                ..default::Default::default()
                             }),
                             license: Some(swagger::License {
                                 name: "MIT".to_string(),
                                 url: "http://opensource.org/licenses/MIT".to_string(),
                             }),
-                            ..std::default::Default::default()
+                            ..default::Default::default()
                         },
-                        ..std::default::Default::default()
+                        ..default::Default::default()
                     });
 
     let version = "0.0.1".to_owned();
