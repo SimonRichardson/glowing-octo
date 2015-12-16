@@ -4,6 +4,13 @@ use jsonway::{self, ObjectSerializer};
 
 use models::event;
 
+#[macro_export]
+macro_rules! set {
+    ($json: expr, $name: expr, $f: expr) => {{
+        $json.set($name, )
+    }};
+}
+
 pub struct EventSerializer;
 
 impl jsonway::ObjectSerializer<event::Event> for EventSerializer {
@@ -12,9 +19,12 @@ impl jsonway::ObjectSerializer<event::Event> for EventSerializer {
     }
 
     fn build(&self, event: &event::Event, json: &mut jsonway::ObjectBuilder) {
-        json.set("id", event.get_id().bytes().to_hex().to_string());
-        json.set("name", event.get_name().to_string());
-        json.set("date", event.get_date().to_rfc3339());
+
+        // We should use the mdo syntax here!
+
+        event.get_id().to_owned().map(|x| { json.set("id", x.bytes().to_hex().to_string()); x });
+        event.get_name().to_owned().map(|x| { json.set("name", x.to_string()); x });
+        event.get_date().to_owned().map(|x| { json.set("date", x.to_rfc3339()); x });
     }
 }
 

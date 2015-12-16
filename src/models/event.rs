@@ -19,59 +19,68 @@ use chrono::{DateTime, UTC};
 use std::default;
 
 pub struct Event {
-    id: ObjectId,
-    date: DateTime<UTC>,
-    date_limit: DateTime<UTC>,
-    sale_start_date: DateTime<UTC>,
-    name: String,
+    id: Option<ObjectId>,
+    date: Option<DateTime<UTC>>,
+    date_limit: Option<DateTime<UTC>>,
+    sale_start_date: Option<DateTime<UTC>>,
+    name: Option<String>,
 }
 
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // This is wrong!
         write!(f,
                "Event(ObjectId(\"{}\"), {})",
-               self.id.bytes().to_hex(),
-               self.name)
+               self.id.to_owned().unwrap().bytes().to_hex(),
+               self.name.to_owned().unwrap())
     }
 }
 
 impl default::Default for Event {
     fn default() -> Event {
-        let now = UTC::now();
         Event {
-            id: ObjectId::new().unwrap(),
-            date: now,
-            date_limit: now,
-            sale_start_date: now,
-            name: "".to_string(),
+            id: None,
+            date: None,
+            date_limit: None,
+            sale_start_date: None,
+            name: None,
         }
     }
 }
 
 impl Event {
-    pub fn get_id(&self) -> &ObjectId {
+    pub fn get_id(&self) -> &Option<ObjectId> {
         &self.id
     }
-    pub fn get_name(&self) -> &str {
+    pub fn get_name(&self) -> &Option<String> {
         &self.name
     }
-    pub fn get_date(&self) -> &DateTime<UTC> {
+    pub fn get_date(&self) -> &Option<DateTime<UTC>> {
         &self.date
     }
 
     pub fn new(name: String, date: DateTime<UTC>) -> Event {
         Event {
-            id: ObjectId::new().unwrap(),
-            name: name,
-            date: date,
+            id: ObjectId::new().ok(),
+            name: Some(name),
+            date: Some(date),
             ..default::Default::default()
         }
     }
 
     pub fn with_id(id: ObjectId, name: String, date: DateTime<UTC>) -> Event {
         let mut event = Event::new(name, date);
-        event.id = id;
+        event.id = Some(id);
         event
+    }
+
+    fn create(id: Option<ObjectId>, name: Option<String>, date: Option<DateTime<UTC>>) -> Event {
+        Event {
+            id: id,
+            name: name,
+            date: date,
+            ..default::Default::default()
+        }
     }
 
     pub fn latest(db: &Database) -> Result<Vec<Event>, Error> {
@@ -83,16 +92,15 @@ impl Event {
 
                 let event = mdo! {
                     ref res =<< doc;
-                    ret ret(mdo! {
-                        ref id =<< extract_object_id!(res, "_id");
-                        name =<< extract_string!(res, "name");
-                        date =<< extract_date!(res, "date");
+                    
+                    let id = extract_object_id!(res, "_id");
+                    let name = extract_string!(res, "name");
+                    let date = extract_date!(res, "date");
 
-                        ret ret(Event::with_id(id.to_owned(), name.to_owned(), date))
-                    })
+                    ret ret(Event::create(id, name, date))
                 };
 
-                event.and_then(|x| x.or(Err(NOT_FOUND))).ok()
+                event.ok()
             }
 
             let mut result = Vec::new();

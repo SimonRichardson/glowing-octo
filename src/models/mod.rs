@@ -16,21 +16,21 @@ macro_rules! find {
 #[macro_export]
 macro_rules! extract_object_id {
     ($res: expr, $name: expr) => {{
-        $res.get_object_id($name).map(|val| val.to_owned())
+        $res.get_object_id($name).map(|val| val.to_owned()).ok()
     }}
 }
 
 #[macro_export]
 macro_rules! extract_string {
     ($res: expr, $name: expr) => {{
-        $res.get_str($name).map(|val| val.to_string().to_owned())
+        $res.get_str($name).map(|val| val.to_string().to_owned()).ok()
     }}
 }
 
 #[macro_export]
 macro_rules! extract_date {
     ($res: expr, $name: expr) => {{
-        $res.get_utc_datetime($name).map(|val| val.to_owned())
+        $res.get_utc_datetime($name).map(|val| val.to_owned()).ok()
     }}
 }
 
